@@ -29,7 +29,7 @@ python3 ../invasor/tools/pack_module.py deckico       # check, tests -> deckico-
 python3 ../invasor/tools/install_module.py deckico    # or install that zip from ⚙ Settings › Install module
 ```
 
-Needs an Invasor core with `ctx.on_steam_start` and `author` support in module.json.
+Needs Invasor 0.2.0 or later (`ctx.events`, `min_core`).
 
 ## License
 [GNU General Public License v3.0 or later](LICENSE) (GPL-3.0-or-later).
