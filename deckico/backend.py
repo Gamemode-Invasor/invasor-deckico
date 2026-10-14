@@ -14,10 +14,10 @@ _lock = threading.Lock()
 def setup(context):
     global ctx
     ctx = context
-    ctx.on_steam_start(run)
+    ctx.events.on("steam_start", run)
 
 
-def run():
+def run(payload=None):
     # One pass at a time: a Steam restart during a pass doesn't start a second one.
     if not _lock.acquire(blocking=False):
         return
