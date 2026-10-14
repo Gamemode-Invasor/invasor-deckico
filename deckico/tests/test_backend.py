@@ -22,10 +22,11 @@ def load_backend():
 class FakeCtx:
     def __init__(self):
         self.log = logging.getLogger("test.deckico")
-        self.steam_start_cbs = []
+        self.listeners = []
+        self.events = self
 
-    def on_steam_start(self, cb):
-        self.steam_start_cbs.append(cb)
+    def on(self, name, cb):
+        self.listeners.append((name, cb))
 
 
 class Backend(unittest.TestCase):
@@ -35,10 +36,10 @@ class Backend(unittest.TestCase):
 
     def test_runs_on_every_steam_start(self):
         self.b.setup(self.ctx)
-        self.assertEqual(self.ctx.steam_start_cbs, [self.b.run])
+        self.assertEqual(self.ctx.listeners, [("steam_start", self.b.run)])
         with mock.patch.object(self.b.icons, "apply", return_value=(3, 1)) as apply, \
                 self.assertLogs("test.deckico", "INFO") as logs:
-            self.b.run()
+            self.b.run({"instance": "x"})
         apply.assert_called_once_with()
         self.assertIn("icons set on 3 folders (1 without an image)", logs.output[0])
 
