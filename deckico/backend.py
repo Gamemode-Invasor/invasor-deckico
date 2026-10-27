@@ -22,15 +22,21 @@ def run(payload=None):
     if not _lock.acquire(blocking=False):
         return
     try:
-        done, missing = icons.apply()
+        paths = ctx.paths
+        done, missing = icons.apply(paths.libraries(), paths.userdata(all=True), paths.steam_root())
         ctx.log.info("icons set on %d folders (%d without an image)", done, missing)
+    except ctx.Unavailable as e:
+        ctx.log.info("no icons set: %s", e)
     finally:
         _lock.release()
 
 
 def uninstall(context, purge):
     """Remove the icons it left in Steam's folders (deckico-cli --removeicons)."""
-    context.log.info("removed %d icons", icons.remove())
+    try:
+        context.log.info("removed %d icons", icons.remove(context.paths.libraries()))
+    except context.Unavailable as e:
+        context.log.info("no icons removed: %s", e)
 
 
 METHODS = {}

@@ -1,8 +1,8 @@
 {
   "api": 1,
   "name": "Deckico",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "author": "FranjeGueje",
-  "min_core": "0.2.0",
+  "min_core": "0.3.0",
   "description": "Puts each game's icon on its compatdata and shadercache folders, every time Steam starts."
 }
