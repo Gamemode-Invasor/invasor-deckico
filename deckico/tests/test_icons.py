@@ -37,7 +37,9 @@ class Icons(unittest.TestCase):
         (cache / f"{SHA}.jpg").write_text("x")
         # Mounted media, found even when Steam doesn't list it.
         (self.media / "deck" / "steamapps" / "compatdata" / "20").mkdir(parents=True)
-        self.globs = (str(self.media / "*" / "steamapps"),)
+        # What ctx.paths answers: every library, and every account but 0.
+        self.libs = [self.steam / "steamapps", self.sd / "steamapps", self.media / "deck" / "steamapps"]
+        self.accounts = [self.steam / "userdata" / u for u in ("111", "222")]
 
     def grid(self, user, name):
         f = self.steam / "userdata" / user / "config/grid" / name
@@ -49,20 +51,17 @@ class Icons(unittest.TestCase):
         f = lib / "steamapps" / name / appid / ".directory"
         return f.read_text() if f.exists() else None
 
-    def test_libraries(self):
-        self.assertEqual(icons.libraries(self.steam, self.globs),
-                         sorted([self.steam / "steamapps", self.sd / "steamapps", self.media / "deck" / "steamapps"]))
-
     def test_find_image(self):
         grid = self.steam / "userdata"
-        self.assertEqual(icons.find_image("10", self.steam), grid / "222/config/grid/10_ICON.jpg")  # _icon beats _hero
-        self.assertEqual(icons.find_image("20", self.steam), self.steam / f"appcache/librarycache/20/{SHA}.jpg")
-        self.assertIsNone(icons.find_image("30", self.steam))
-        self.assertIsNone(icons.find_image("40", self.steam))  # user 0 doesn't count
-        self.assertEqual(icons.find_image("50", self.steam), grid / "111/config/grid/sub/50p.png")
+        files = icons.grid_files(self.accounts)
+        self.assertEqual(icons.find_image("10", files, self.steam), grid / "222/config/grid/10_ICON.jpg")  # _icon beats _hero
+        self.assertEqual(icons.find_image("20", files, self.steam), self.steam / f"appcache/librarycache/20/{SHA}.jpg")
+        self.assertIsNone(icons.find_image("30", files, self.steam))
+        self.assertIsNone(icons.find_image("40", files, self.steam))  # only user 0 has it (ctx.paths leaves 0 out)
+        self.assertEqual(icons.find_image("50", files, self.steam), grid / "111/config/grid/sub/50p.png")
 
     def test_apply_and_remove(self):
-        self.assertEqual(icons.apply(self.steam, self.globs), (5, 2))
+        self.assertEqual(icons.apply(self.libs, self.accounts, self.steam), (5, 2))
         icon10 = f"[Desktop Entry]\nIcon={self.steam / 'userdata/222/config/grid/10_ICON.jpg'}\n"
         self.assertEqual(self.icon(self.steam, "compatdata", "10"), icon10)
         self.assertEqual(self.icon(self.steam, "shadercache", "10"), icon10)
@@ -70,19 +69,30 @@ class Icons(unittest.TestCase):
         self.assertIsNone(self.icon(self.sd, "compatdata", "30"))
         self.assertIsNone(self.icon(self.steam, "compatdata", "0"))
         self.assertIsNone(self.icon(self.steam, "compatdata", "notanid"))
-        self.assertEqual(icons.apply(self.steam, self.globs), (5, 2))  # again: same result
+        self.assertEqual(icons.apply(self.libs, self.accounts, self.steam), (5, 2))  # again: same result
+        # A .directory that is a link is never written through.
+        outside = self.root / "outside.txt"
+        outside.write_text("keep")
+        link = self.steam / "steamapps/compatdata/10/.directory"
+        link.unlink()
+        link.symlink_to(outside)
+        self.assertEqual(icons.apply(self.libs, self.accounts, self.steam), (4, 3))
+        self.assertEqual(outside.read_text(), "keep")
+        link.unlink()
+        link.write_text(icon10)
         # Only the .directory files go; the folders and anything else stay.
         other = self.steam / "steamapps/compatdata/10/pfx.lock"
         other.write_text("x")
-        self.assertEqual(icons.remove(self.steam, self.globs), 5)
+        self.assertEqual(icons.remove(self.libs), 5)
         self.assertIsNone(self.icon(self.steam, "compatdata", "10"))
         self.assertTrue(other.exists())
-        self.assertEqual(icons.remove(self.steam, self.globs), 0)
+        self.assertEqual(icons.remove(self.libs), 0)
 
     def test_no_steam_is_nothing_to_do(self):
         nothing = self.root / "nothing"
-        self.assertEqual(icons.apply(nothing, ()), (0, 0))
-        self.assertEqual(icons.remove(nothing, ()), 0)
+        self.assertEqual(icons.apply([nothing / "steamapps"], [nothing / "userdata/111"], nothing), (0, 0))
+        self.assertEqual(icons.apply([], [], nothing), (0, 0))
+        self.assertEqual(icons.remove([nothing / "steamapps"]), 0)
 
 
 if __name__ == "__main__":

@@ -21,6 +21,12 @@ The log (`journalctl --user -u invasor`) says how many folders got an icon each 
 It does the same as the `deckico-cli` script. If you used that one, remove its autostart entry
 (`deckico-cli -u`) so it doesn't run twice.
 
+## Screenshot
+
+<p align="center">
+  <img src="docs/folders.png" alt="Dolphin on steamapps/compatdata: each game's folder shows its icon; folder 0 has none" width="70%">
+</p>
+
 ## Build, test and install
 With the core checked out next to this repository (`../invasor`):
 
@@ -29,7 +35,7 @@ python3 ../invasor/tools/pack_module.py deckico       # check, tests -> deckico-
 python3 ../invasor/tools/install_module.py deckico    # or install that zip from ⚙ Settings › Install module
 ```
 
-Needs Invasor 0.2.0 or later (`ctx.events`, `min_core`).
+Needs Invasor 0.3.0 or later (`ctx.events`, `ctx.paths` to find Steam's libraries and accounts).
 
 ## License
 [GNU General Public License v3.0 or later](LICENSE) (GPL-3.0-or-later).
